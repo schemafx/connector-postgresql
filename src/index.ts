@@ -196,11 +196,15 @@ export default class PostgreSQLConnector extends Connector {
     /**
      * Create a table.
      * @param table Table to create.
+     * @param connectionPayload Connection payload for auth.
      * @returns Created table.
      */
-    async createTable(table: TableDefinition): Promise<TableDefinition> {
+    async createTable(
+        table: TableDefinition,
+        connectionPayload: Record<string, string>
+    ): Promise<TableDefinition> {
         await this.executeQuery(
-            table.connectionPayload as Record<string, string>,
+            connectionPayload,
             format(
                 `CREATE TABLE %I %s;`,
                 table.connectionPath[0],
@@ -223,13 +227,14 @@ export default class PostgreSQLConnector extends Connector {
      * Update a table.
      * @param oldTable Table to update.
      * @param newTable Updated Table.
+     * @param connectionPayload Connection payload for auth.
      * @returns Updated table.
      */
     async updateTable(
         oldTable: TableDefinition,
-        newTable: TableDefinition
+        newTable: TableDefinition,
+        connectionPayload: Record<string, string>
     ): Promise<TableDefinition> {
-        const connectionPayload = newTable.connectionPayload;
         const alterations: string[] = [];
         const oldColumnsMap = new Map(oldTable.columns.map(col => [col.name, col]));
         const newColumnsMap = new Map(newTable.columns.map(col => [col.name, col]));
@@ -303,11 +308,15 @@ export default class PostgreSQLConnector extends Connector {
     /**
      * Delete a table.
      * @param table Table to delete.
+     * @param connectionPayload Connection payload for auth.
      * @returns Deleted table.
      */
-    async deleteTable(table: TableDefinition): Promise<TableDefinition> {
+    async deleteTable(
+        table: TableDefinition,
+        connectionPayload: Record<string, string>
+    ): Promise<TableDefinition> {
         await this.executeQuery(
-            table.connectionPayload as Record<string, string>,
+            connectionPayload,
             format('DROP TABLE %I', table.connectionPath[0])
         );
 
@@ -317,16 +326,18 @@ export default class PostgreSQLConnector extends Connector {
     /**
      * Read data from tables.
      * @param tables Tables to read.
+     * @param connectionPayload Connection payload for auth.
      * @returns Rows detail.
      */
     async readData(
-        tables: TableDefinition[]
+        tables: TableDefinition[],
+        connectionPayload: Record<string, string>
     ): Promise<{ table: TableDefinition; rows: Record<string, unknown>[] }[]> {
         return await Promise.all(
             tables.map(async table => ({
                 table,
                 rows: await this.executeQuery(
-                    table.connectionPayload as Record<string, string>,
+                    connectionPayload,
                     format('SELECT * FROM %I', table.connectionPath[0])
                 )
             }))
@@ -337,11 +348,13 @@ export default class PostgreSQLConnector extends Connector {
      * Append data to the table.
      * @param table Table to append data into.
      * @param rows Rows to append.
+     * @param connectionPayload Connection payload for auth.
      * @returns Resulting rows.
      */
     async createData(
         table: TableDefinition,
-        rows: Record<string, unknown>[]
+        rows: Record<string, unknown>[],
+        connectionPayload: Record<string, string>
     ): Promise<Record<string, unknown>[]> {
         if (rows.length === 0) {
             return [];
@@ -349,7 +362,7 @@ export default class PostgreSQLConnector extends Connector {
 
         const columns = table.columns.map(c => c.name);
         await this.executeQuery(
-            table.connectionPayload as Record<string, string>,
+            connectionPayload,
             format(
                 `INSERT INTO %I (%s) VALUES %s;`,
                 table.connectionPath[0],
@@ -368,11 +381,13 @@ export default class PostgreSQLConnector extends Connector {
      * Update data in the table.
      * @param table Table to update data into.
      * @param rows Rows to update.
+     * @param connectionPayload Connection payload for auth.
      * @returns Resulting rows.
      */
     async updateData(
         table: TableDefinition,
-        rows: Record<string, unknown>[]
+        rows: Record<string, unknown>[],
+        connectionPayload: Record<string, string>
     ): Promise<Record<string, unknown>[]> {
         if (rows.length === 0) {
             return [];
@@ -384,7 +399,7 @@ export default class PostgreSQLConnector extends Connector {
         }
 
         await this.executeQuery(
-            table.connectionPayload as Record<string, string>,
+            connectionPayload,
             format(
                 'UPDATE %I SET %s FROM (VALUES %s) AS updates (%s) WHERE %I.%I = updates.%I',
                 table.connectionPath[0],
@@ -413,11 +428,13 @@ export default class PostgreSQLConnector extends Connector {
      * Delete data from the table.
      * @param table Table to delete data from.
      * @param rows Rows to delete.
+     * @param connectionPayload Connection payload for auth.
      * @returns Deleted rows.
      */
     async deleteData(
         table: TableDefinition,
-        rows: Record<string, unknown>[]
+        rows: Record<string, unknown>[],
+        connectionPayload: Record<string, string>
     ): Promise<Record<string, unknown>[]> {
         if (rows.length === 0) {
             return [];
@@ -429,7 +446,7 @@ export default class PostgreSQLConnector extends Connector {
         }
 
         await this.executeQuery(
-            table.connectionPayload as Record<string, string>,
+            connectionPayload,
             format(
                 'DELETE FROM %I WHERE %I IN (%s)',
                 table.connectionPath[0],
