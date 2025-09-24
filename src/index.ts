@@ -186,9 +186,7 @@ export default class PostgreSQLConnector extends Connector {
             name: tableName,
             connector: this.name,
             connection: '',
-            connectionPayload,
             connectionPath,
-            connectionTimeZone: '',
             columns
         };
     }
