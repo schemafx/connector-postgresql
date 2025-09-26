@@ -88,7 +88,7 @@ export default class PostgreSQLConnector extends Connector {
      * @param type The SchemaFX data type.
      * @returns The corresponding PostgreSQL data type.
      */
-    private mapToPostgresType(type: 'string' | 'number' | 'date' | 'datetime'): string {
+    private mapToPostgresType(type: string): string {
         switch (type) {
             case 'string':
                 return 'TEXT';
@@ -98,6 +98,8 @@ export default class PostgreSQLConnector extends Connector {
                 return 'DATE';
             case 'datetime':
                 return 'TIMESTAMP';
+            case 'json':
+                return 'JSON';
             default:
                 throw new Error(`Unsupported data type: ${type}`);
         }
@@ -152,7 +154,7 @@ export default class PostgreSQLConnector extends Connector {
                 [tableName]
             )
         ).map(row => {
-            let type: 'string' | 'number' | 'date' | 'datetime' = 'string';
+            let type: 'string' | 'number' | 'date' | 'datetime' | 'json' = 'string';
             switch (row.data_type) {
                 case 'integer':
                 case 'smallint':
@@ -169,6 +171,9 @@ export default class PostgreSQLConnector extends Connector {
                 case 'timestamp':
                 case 'timestamptz':
                     type = 'datetime';
+                    break;
+                case 'json':
+                    type = 'json';
                     break;
                 default:
                     type = 'string';
