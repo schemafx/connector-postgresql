@@ -95,20 +95,25 @@ export default class PostgreSQLConnector extends Connector {
     /**
      * Maps SchemaFX data types to PostgreSQL data types.
      * @param type The SchemaFX data type.
+     * @param type The SchemaFX data type props.
      * @returns The corresponding PostgreSQL data type.
      */
-    private mapToPostgresType(type: string): string {
+    private mapToPostgresType(type: TableColumnType, typeProps: Record<string, unknown>): string {
         switch (type) {
-            case 'string':
+            case TableColumnType.String:
                 return 'TEXT';
-            case 'number':
+            case TableColumnType.Boolean:
+                return 'BOOLEAN';
+            case TableColumnType.Number:
                 return 'DOUBLE PRECISION';
-            case 'date':
+            case TableColumnType.Date:
                 return 'DATE';
-            case 'datetime':
+            case TableColumnType.DateTime:
                 return 'TIMESTAMP';
-            case 'json':
+            case TableColumnType.Json:
                 return 'JSON';
+            case TableColumnType.Array:
+                return `${mapToPostgresType(typeProps.type, typeProps.typeProps)}[]`;
             default:
                 throw new Error(`Unsupported data type: ${type}`);
         }
@@ -225,7 +230,8 @@ export default class PostgreSQLConnector extends Connector {
                         format(
                             `(%I %s)`,
                             col.name,
-                            this.mapToPostgresType(col.type) + (col.key ? ' PRIMARY KEY' : '')
+                            this.mapToPostgresType(col.type, col.typeProps) +
+                                (col.key ? ' PRIMARY KEY' : '')
                         )
                     )
                     .join(',')
@@ -260,7 +266,7 @@ export default class PostgreSQLConnector extends Connector {
                     format(
                         'ALTER COLUMN %I TYPE %s',
                         oldCol.name,
-                        this.mapToPostgresType(newCol.type)
+                        this.mapToPostgresType(newCol.type, newCol.typeProps)
                     )
                 );
             }
@@ -269,7 +275,11 @@ export default class PostgreSQLConnector extends Connector {
         for (const newCol of newTable.columns) {
             if (!oldColumnsMap.has(newCol.name)) {
                 alterations.push(
-                    format(`ADD COLUMN %I %s`, newCol.name, this.mapToPostgresType(newCol.type))
+                    format(
+                        `ADD COLUMN %I %s`,
+                        newCol.name,
+                        this.mapToPostgresType(newCol.type, newCol.typeProps)
+                    )
                 );
             }
         }
