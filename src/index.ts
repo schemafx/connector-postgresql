@@ -1,7 +1,13 @@
 import type { Client } from 'pg';
 import format from 'pg-format';
 import Pool from 'pg-pool';
-import { Connector, type TableDefinition } from 'schemafx';
+import {
+    Connector,
+    ConnectorAuthType,
+    ConnectorAuthPropType,
+    type TableDefinition,
+    TableColumnType
+} from 'schemafx';
 
 export interface PostgreSQLConnectorOptions {
     /** Name for the connector. Defaults to "postgresql". */
@@ -19,14 +25,17 @@ export default class PostgreSQLConnector extends Connector {
     constructor(opts?: PostgreSQLConnectorOptions) {
         super(opts?.name || 'postgresql');
 
-        this.authType = 'Basic';
+        this.authType = ConnectorAuthType.Basic;
         this.authProps = {
-            host: 'Text',
-            port: 'Number',
-            user: 'Text',
-            password: 'Password',
-            database: 'Text',
-            certificate: 'Password'
+            host: ConnectorAuthPropType.Text,
+            port: ConnectorAuthPropType.Number,
+            user: ConnectorAuthPropType.Text,
+            password: ConnectorAuthPropType.Password,
+            database: ConnectorAuthPropType.Text,
+            certificate: {
+                type: ConnectorAuthPropType.Password,
+                required: false
+            }
         };
     }
 
@@ -154,7 +163,7 @@ export default class PostgreSQLConnector extends Connector {
                 [tableName]
             )
         ).map(row => {
-            let type: 'string' | 'number' | 'date' | 'datetime' | 'json' = 'string';
+            let type: TableColumnType;
             switch (row.data_type) {
                 case 'integer':
                 case 'smallint':
@@ -163,20 +172,20 @@ export default class PostgreSQLConnector extends Connector {
                 case 'numeric':
                 case 'real':
                 case 'double precision':
-                    type = 'number';
+                    type = TableColumnType.Number;
                     break;
                 case 'date':
-                    type = 'date';
+                    type = TableColumnType.Date;
                     break;
                 case 'timestamp':
                 case 'timestamptz':
-                    type = 'datetime';
+                    type = TableColumnType.DateTime;
                     break;
                 case 'json':
-                    type = 'json';
+                    type = TableColumnType.Json;
                     break;
                 default:
-                    type = 'string';
+                    type = TableColumnType.String;
                     break;
             }
 
